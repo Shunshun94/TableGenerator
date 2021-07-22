@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/a-table@1.5.9/fonts/a-table-icon.css">
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/a-table@1.5.9/css/a-table.css">
+<script src="https://unpkg.com/a-table@1.5.9/build/a-table.min.js"></script>
+<style>
+* {
+	font-family: "BIZ UDゴシック","UD Shin Go NT Light JIS2004","UD デジタル 教科書体 N-R", Verdana, Roboto, "Droid Sans", "游ゴシック", YuGothic, "メイリオ", Meiryo, "ヒラギノ角ゴ ProN W3", "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+}
+.a-table-btn-group-list {
+    display:none;
+}
+h1 > a {
+    text-decoration: none;
+    color:black;
+}
+footer {
+    font-size:70%;
+    margin-top:1em;
+    padding:1em;
+    text-align:right;
+    background-color:antiquewhite;
+}
+</style>
+<title>Table Picture Generator</title>
+</head>
+<body>
+    <h1><a href="./table.html">Table Picture Generator</a></h1>
+    <div id="base"></div>
+    <div>
+        <hr/>
+        <button id="copyPicture">画像URLをクリップボードにコピー</button><br/>
+        <button id="copyShare">画像URLとこのページのURLをクリップボードにコピー</button>
+        <hr/>
+        <button id="copyAA">アスキーアートをクリップボードにコピー</button><br/>
+        <button id="copyEditor">このページのURLをクリップボードにコピー</button>
+        <hr/>
+        <button id="copyHtml">HTMLをクリップボードにコピー</button>
+    </div>
+    <footer>
+        <p><a href="https://twitter.com/Shunshun94">作者コンタクト</a> / <a href="https://github.com/Shunshun94/TableGenerator">ソースコード</a> / <a href="https://amzn.asia/8mNqdKy">作者を支援する</a></p>
+    </footer>
+<script>
+const DEFAULT_TABLE = `<table id="myTable">
+<tr>
+    <td>名前</td>
+    <td>HP</td>
+    <td>MP</td>
+</tr>
+<tr>
+    <td>マリナ</td>
+    <td>28</td>
+    <td>8</td>
+</tr>
+<tr>
+    <td>サキ</td>
+    <td>17</td>
+    <td>25</td>
+</tr>
+</table>`;
+if(location.search) {
+    const myTableDom = document.createElement('table');
+    myTableDom.appendChild(document.createElement('tbody'));
+    myTableDom.id = 'myTable';
+    decodeURIComponent(location.search.slice(1)).split('\n').forEach((rawTr)=>{
+        const trDom = document.createElement('tr');
+        rawTr.split('\t').forEach((t)=>{
+            const tdDom = document.createElement('td');
+            tdDom.innerText = t;
+            trDom.appendChild(tdDom);
+        });
+        myTableDom.children[0].appendChild(trDom);
+    });
+    document.getElementById('base').appendChild(myTableDom);
+} else {
+    document.getElementById('base').innerHTML = DEFAULT_TABLE;
+}
+const table = new aTable('#myTable',{
+    lang:'ja'
+});
+
+const countTextLength = (str) => {
+    // https://zukucode.com/2017/04/javascript-string-length.html
+    let length = 0;
+    for (let i = 0; i < str.length; i++) {
+        const c = str.charCodeAt(i);
+        if ((c >= 0x0 && c < 0x81) || (c === 0xf8f0) || (c >= 0xff61 && c < 0xffa0) || (c >= 0xf8f1 && c < 0xf8f4)) {
+            length += 1;
+        } else {
+            length += 2;
+        }
+    }
+    return length;
+};
+
+const calcColumnsLength = (tableArray) => {
+    const result = tableArray[0].map((d)=>{return 0});
+    tableArray.forEach((tr)=>{
+        tr.forEach((td, i)=>{
+            result[i] = Math.max(result[i], countTextLength(td));
+        });
+    });
+    return result.map((d)=>{
+        if(d % 2 === 1) {
+            return d + 1;
+        } else {
+            return d;
+        }
+    });
+};
+
+const adjustTable = (tableArray, columnsLength) => {
+    return tableArray.map((tr)=>{
+        return tr.map((td, i)=>{
+            const diff = columnsLength[i] - countTextLength(td);
+            return ' '.repeat(diff) + td;
+        });
+    });
+};
+
+const generateSeparator = (columnsLength, sept='┼') => {
+    return columnsLength.map((d)=>{
+        return '─'.repeat(d / 2);
+    }).join(sept);
+};
+
+const exportAsAATable = (tableArray, columnsLength) => {
+    const separator = generateSeparator(columnsLength);
+    return `┌${generateSeparator(columnsLength, '┬')}┐\n` + tableArray.map((tr)=>{
+        return `│${tr.join('│')}│`;
+    }).join(`\n├${separator}┤\n`) + `\n└${generateSeparator(columnsLength, '┴')}┘`;
+};
+
+const generateTable = (tableArray) => {
+    const columnsLength = calcColumnsLength(tableArray);
+    const adjustedElements = adjustTable(tableArray, columnsLength);
+    return exportAsAATable(adjustedElements, columnsLength);
+};
+
+const getTableColumns = () => {
+    const dom = (new DOMParser()).parseFromString(table.getTable(), 'text/html');
+    return Array.from(dom.body.children[0].children[0].children).map((tr)=>{
+        return Array.from(tr.children).map((td)=>{return td.innerText});
+    });
+};
+
+const calcTableSize = (aa) => {
+    const lines = aa.split('\n');
+    return {
+        x: countTextLength(lines[0]) / 2,
+        y: lines.length
+    };
+};
+
+document.getElementById("copyPicture").onclick = (e)=>{
+    const tableColumns = getTableColumns();
+    const table = generateTable(tableColumns);
+    const tableSize = calcTableSize(table);
+    const pictureUrl = `${location.origin}${location.pathname.replace('table.html', '')}table.cgi?value=${encodeURIComponent(table)}&x=${tableSize.x * 20 + 8}&y=${tableSize.y * 25 - 12}`;
+    navigator.clipboard.writeText(pictureUrl);
+};
+document.getElementById("copyShare").onclick = (e)=>{
+    const tableColumns = getTableColumns();
+    const table = generateTable(tableColumns);
+    const tableSize = calcTableSize(table);
+    const pictureUrl = `${location.origin}${location.pathname.replace('table.html', '')}table.cgi?value=${encodeURIComponent(table)}&x=${tableSize.x * 20 + 8}&y=${tableSize.y * 25 - 12}`;
+    const editUrl = location.href.split('?')[0] + '?' + encodeURIComponent(tableColumns.map((tr)=>{
+        return tr.join('\t');
+    }).join('\n'));
+    navigator.clipboard.writeText(`${pictureUrl}\n編集:${editUrl}`);
+};
+document.getElementById("copyHtml").onclick = (e)=>{
+    navigator.clipboard.writeText(table.getTable());
+};
+document.getElementById("copyAA").onclick = (e)=>{
+    const tableColumns = getTableColumns();
+    const table = generateTable(tableColumns);
+    navigator.clipboard.writeText(table);
+};
+document.getElementById("copyEditor").onclick = (e)=>{
+    const tableColumns = getTableColumns();
+    const editUrl = location.href.split('?')[0] + '?' + encodeURIComponent(tableColumns.map((tr)=>{
+        return tr.join('\t');
+    }).join('\n'));
+    navigator.clipboard.writeText(editUrl);
+};
+</script>
+</body>
+</html>
