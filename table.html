@@ -5,6 +5,7 @@
 <link rel="stylesheet" type="text/css" href="https://unpkg.com/a-table@1.5.9/fonts/a-table-icon.css">
 <link rel="stylesheet" type="text/css" href="https://unpkg.com/a-table@1.5.9/css/a-table.css">
 <script src="https://unpkg.com/a-table@1.5.9/build/a-table.min.js"></script>
+<script src="https://shunshun94.github.io/shared/other/io/github/shunshun94/util/table.js"></script>
 <style>
 * {
 	font-family: "BIZ UDゴシック","UD Shin Go NT Light JIS2004","UD デジタル 教科書体 N-R", Verdana, Roboto, "Droid Sans", "游ゴシック", YuGothic, "メイリオ", Meiryo, "ヒラギノ角ゴ ProN W3", "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
@@ -77,94 +78,21 @@ if(location.search) {
 } else {
     document.getElementById('base').innerHTML = DEFAULT_TABLE;
 }
-const table = new aTable('#myTable',{
+const myTable = new aTable('#myTable',{
     lang:'ja'
 });
 
-const countTextLength = (str) => {
-    // https://zukucode.com/2017/04/javascript-string-length.html
-    let length = 0;
-    for (let i = 0; i < str.length; i++) {
-        const c = str.charCodeAt(i);
-        if ((c >= 0x0 && c < 0x81) || (c === 0xf8f0) || (c >= 0xff61 && c < 0xffa0) || (c >= 0xf8f1 && c < 0xf8f4)) {
-            length += 1;
-        } else {
-            length += 2;
-        }
-    }
-    return length;
-};
-
-const calcColumnsLength = (tableArray) => {
-    const result = tableArray[0].map((d)=>{return 0});
-    tableArray.forEach((tr)=>{
-        tr.forEach((td, i)=>{
-            result[i] = Math.max(result[i], countTextLength(td));
-        });
-    });
-    return result.map((d)=>{
-        if(d % 2 === 1) {
-            return d + 1;
-        } else {
-            return d;
-        }
-    });
-};
-
-const adjustTable = (tableArray, columnsLength) => {
-    return tableArray.map((tr)=>{
-        return tr.map((td, i)=>{
-            const diff = columnsLength[i] - countTextLength(td);
-            return ' '.repeat(diff) + td;
-        });
-    });
-};
-
-const generateSeparator = (columnsLength, sept='┼') => {
-    return columnsLength.map((d)=>{
-        return '─'.repeat(d / 2);
-    }).join(sept);
-};
-
-const exportAsAATable = (tableArray, columnsLength) => {
-    const separator = generateSeparator(columnsLength);
-    return `┌${generateSeparator(columnsLength, '┬')}┐\n` + tableArray.map((tr)=>{
-        return `│${tr.join('│')}│`;
-    }).join(`\n├${separator}┤\n`) + `\n└${generateSeparator(columnsLength, '┴')}┘`;
-};
-
-const generateTable = (tableArray) => {
-    const columnsLength = calcColumnsLength(tableArray);
-    const adjustedElements = adjustTable(tableArray, columnsLength);
-    return exportAsAATable(adjustedElements, columnsLength);
-};
-
-const getTableColumns = () => {
-    const dom = (new DOMParser()).parseFromString(table.getTable(), 'text/html');
-    return Array.from(dom.body.children[0].children[0].children).map((tr)=>{
-        return Array.from(tr.children).map((td)=>{return td.innerText});
-    });
-};
-
-const calcTableSize = (aa) => {
-    const lines = aa.split('\n');
-    return {
-        x: countTextLength(lines[0]) / 2,
-        y: lines.length
-    };
-};
-
 document.getElementById("copyPicture").onclick = (e)=>{
-    const tableColumns = getTableColumns();
-    const table = generateTable(tableColumns);
-    const tableSize = calcTableSize(table);
+    const tableColumns = io.github.shunshun94.util.table.getTableColumns(myTable.getTable());
+    const table = io.github.shunshun94.util.table.generateTable(tableColumns);
+    const tableSize = io.github.shunshun94.util.table.calcTableSize(table);
     const pictureUrl = `${location.origin}${location.pathname.replace('table.html', '')}table.cgi?value=${encodeURIComponent(table)}&x=${tableSize.x * 20 + 8}&y=${tableSize.y * 25 - 12}`;
     navigator.clipboard.writeText(pictureUrl);
 };
 document.getElementById("copyShare").onclick = (e)=>{
-    const tableColumns = getTableColumns();
-    const table = generateTable(tableColumns);
-    const tableSize = calcTableSize(table);
+    const tableColumns = io.github.shunshun94.util.table.getTableColumns(myTable.getTable());
+    const table = io.github.shunshun94.util.table.generateTable(tableColumns);
+    const tableSize = io.github.shunshun94.util.table.calcTableSize(table);
     const pictureUrl = `${location.origin}${location.pathname.replace('table.html', '')}table.cgi?value=${encodeURIComponent(table)}&x=${tableSize.x * 20 + 8}&y=${tableSize.y * 25 - 12}`;
     const editUrl = location.href.split('?')[0] + '?' + encodeURIComponent(tableColumns.map((tr)=>{
         return tr.join('\t');
@@ -172,15 +100,15 @@ document.getElementById("copyShare").onclick = (e)=>{
     navigator.clipboard.writeText(`${pictureUrl}\n編集:${editUrl}`);
 };
 document.getElementById("copyHtml").onclick = (e)=>{
-    navigator.clipboard.writeText(table.getTable());
+    navigator.clipboard.writeText(myTable.getTable());
 };
 document.getElementById("copyAA").onclick = (e)=>{
-    const tableColumns = getTableColumns();
-    const table = generateTable(tableColumns);
+    const tableColumns = io.github.shunshun94.util.table.getTableColumns(myTable.getTable());
+    const table = io.github.shunshun94.util.table.generateTable(tableColumns);
     navigator.clipboard.writeText(table);
 };
 document.getElementById("copyEditor").onclick = (e)=>{
-    const tableColumns = getTableColumns();
+    const tableColumns = io.github.shunshun94.util.table.getTableColumns(myTable.getTable());
     const editUrl = location.href.split('?')[0] + '?' + encodeURIComponent(tableColumns.map((tr)=>{
         return tr.join('\t');
     }).join('\n'));
