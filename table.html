@@ -91,13 +91,23 @@ const getPictureUrlV1 = (tmp_tableColumns) => {
     return `${location.origin}${location.pathname.replace('table.html', '')}table.cgi?value=${encodeURIComponent(table)}&x=${tableSize.x * 20 + 8}&y=${tableSize.y * 25 - 12}`;
 };
 
+const getPictureUrlV2 = (tmp_tableColumns) => {
+    const tableColumns = tmp_tableColumns || io.github.shunshun94.util.table.getTableColumns(myTable.getTable());
+    const columnsLength = io.github.shunshun94.util.table.calcColumnsLength(tableColumns);
+    const adjustedElements = io.github.shunshun94.util.table.adjustTable(io.github.shunshun94.util.table.getTableColumns(myTable.getTable()), columnsLength);
+    const tableString = adjustedElements.map((line)=>{return line.join('│');}).join('\n')
+    const tableSize = io.github.shunshun94.util.table.calcTableSize(tableString);
+    const colLengthString = columnsLength.map((d)=>{return d/2;}).join(',');
+    return `${location.origin}${location.pathname.replace('table.html', '')}table.cgi?v2=${encodeURIComponent(tableString)}&x=${(tableSize.x + 2) * 20 + 8}&y=${(tableSize.y * 2 + 1) * 25 - 12}&cols=${colLengthString}`;
+};
+
 document.getElementById("copyPicture").onclick = (e)=>{
-    const pictureUrl = getPictureUrlV1();
+    const pictureUrl = getPictureUrlV2();
     navigator.clipboard.writeText(pictureUrl);
 };
 document.getElementById("copyShare").onclick = (e)=>{
     const tableColumns = io.github.shunshun94.util.table.getTableColumns(myTable.getTable());
-    const pictureUrl = getPictureUrlV1(tableColumns);
+    const pictureUrl = getPictureUrlV2(tableColumns);
     const editUrl = location.href.split('?')[0] + '?' + encodeURIComponent(tableColumns.map((tr)=>{
         return tr.join('\t');
     }).join('\n'));
