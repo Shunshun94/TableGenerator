@@ -40,6 +40,8 @@ footer {
         <hr/>
         <button id="copyHtml">HTMLをクリップボードにコピー</button>
     </div>
+    <hr/>
+    <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/FGVNXgOtPrE" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     <footer>
         <p><a href="https://twitter.com/Shunshun94">作者コンタクト</a> / <a href="https://github.com/Shunshun94/TableGenerator">ソースコード</a> / <a href="https://amzn.asia/8mNqdKy">作者を支援する</a></p>
     </footer>
@@ -82,18 +84,20 @@ const myTable = new aTable('#myTable',{
     lang:'ja'
 });
 
-document.getElementById("copyPicture").onclick = (e)=>{
-    const tableColumns = io.github.shunshun94.util.table.getTableColumns(myTable.getTable());
+const getPictureUrlV1 = (tmp_tableColumns) => {
+    const tableColumns = tmp_tableColumns || io.github.shunshun94.util.table.getTableColumns(myTable.getTable());
     const table = io.github.shunshun94.util.table.generateTable(tableColumns);
     const tableSize = io.github.shunshun94.util.table.calcTableSize(table);
-    const pictureUrl = `${location.origin}${location.pathname.replace('table.html', '')}table.cgi?value=${encodeURIComponent(table)}&x=${tableSize.x * 20 + 8}&y=${tableSize.y * 25 - 12}`;
+    return `${location.origin}${location.pathname.replace('table.html', '')}table.cgi?value=${encodeURIComponent(table)}&x=${tableSize.x * 20 + 8}&y=${tableSize.y * 25 - 12}`;
+};
+
+document.getElementById("copyPicture").onclick = (e)=>{
+    const pictureUrl = getPictureUrlV1();
     navigator.clipboard.writeText(pictureUrl);
 };
 document.getElementById("copyShare").onclick = (e)=>{
     const tableColumns = io.github.shunshun94.util.table.getTableColumns(myTable.getTable());
-    const table = io.github.shunshun94.util.table.generateTable(tableColumns);
-    const tableSize = io.github.shunshun94.util.table.calcTableSize(table);
-    const pictureUrl = `${location.origin}${location.pathname.replace('table.html', '')}table.cgi?value=${encodeURIComponent(table)}&x=${tableSize.x * 20 + 8}&y=${tableSize.y * 25 - 12}`;
+    const pictureUrl = getPictureUrlV1(tableColumns);
     const editUrl = location.href.split('?')[0] + '?' + encodeURIComponent(tableColumns.map((tr)=>{
         return tr.join('\t');
     }).join('\n'));
