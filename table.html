@@ -36,7 +36,8 @@ footer {
         <button id="copyShare">画像URLとこのページのURLをクリップボードにコピー</button>
         <hr/>
         <button id="copyAA">アスキーアートをクリップボードにコピー</button><br/>
-        <button id="copyEditor">このページのURLをクリップボードにコピー</button>
+        <button id="copyEditor">このページのURLをクリップボードにコピー</button><br/>
+        <button id="copyEditorMarkdown">このページへのリンクをマークダウン形式のリンクでクリップボードにコピー</button>
         <hr/>
         <button id="copyHtml">HTMLをクリップボードにコピー</button>
     </div>
@@ -127,6 +128,14 @@ document.getElementById("copyEditor").onclick = (e)=>{
         return tr.join('\t');
     }).join('\n'));
     navigator.clipboard.writeText(editUrl);
+};
+
+document.getElementById("copyEditorMarkdown").onclick = (e)=>{
+    const tableColumns = io.github.shunshun94.util.table.getTableColumns(myTable.getTable());
+    const editUrl = location.href.split('?')[0] + '?' + encodeURIComponent(tableColumns.map((tr)=>{
+        return tr.join('\t');
+    }).join('\n'));
+    navigator.clipboard.writeText(`[表を編集する](${editUrl})`);
 };
 </script>
 </body>
